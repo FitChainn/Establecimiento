@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,4 +15,5 @@ public class EstablecimientoResponseDTO {
     private String direccion;
     private Object entrenadores;
     private Object clientes;
+    private Map<String, Object> resumenEquipos;
 }

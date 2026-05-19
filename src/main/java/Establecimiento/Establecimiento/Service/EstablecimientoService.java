@@ -5,16 +5,19 @@ import Establecimiento.Establecimiento.Repository.EstablecimientoRepository;
 import Establecimiento.Establecimiento.dto.EstablecimientoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoResponseDTO;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@Slf4j
 public class EstablecimientoService {
 
     @Autowired
@@ -29,6 +32,7 @@ public class EstablecimientoService {
                 e.getNombre(),
                 e.getDireccion(),
                 null,
+                null,
                 null
         );
     }
@@ -36,6 +40,7 @@ public class EstablecimientoService {
         EstablecimientoResponseDTO dto = mapToDTO(e);
         dto.setEntrenadores(obtenerEntrenadores(e.getId()));
         dto.setClientes(obtenerClientes(e.getId()));
+        dto.setResumenEquipos(obtenerResumenEquipos(e.getId()));
         return dto;
     }
     public List<EstablecimientoResponseDTO> obtenerTodos() {
@@ -51,13 +56,16 @@ public class EstablecimientoService {
 
 
     public EstablecimientoResponseDTO guardar(EstablecimientoRequestDTO dto) {
+        log.info("Guardando establecimiento: {}", dto.getNombre());
         Establecimiento e = new Establecimiento();
         e.setNombre(dto.getNombre());
         e.setDireccion(dto.getDireccion());
+        log.info("Establecimiento guardado con ID: {}", e.getId());
         return mapToDTO(establecimientoRepository.save(e));
     }
 
     public void eliminarPorId(Long id) {
+        log.info("Eliminando establecimiento con ID: {}", id);
         establecimientoRepository.deleteById(id);
     }
 
@@ -86,6 +94,19 @@ public class EstablecimientoService {
                     .block();
         } catch (Exception e) {
             return List.of();
+        }
+    }
+    public Map<String, Object> obtenerResumenEquipos(Long establecimientoId) {
+        try {
+            return webClientBuilder.build()
+                    .get()
+                    .uri("http://localhost:8083/v1/equipos/establecimiento/{id}/resumen", establecimientoId)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (Exception e) {
+            log.warn("No se pudo obtener equipos del establecimiento ID: {}", establecimientoId);
+            return Map.of();
         }
     }
 }
