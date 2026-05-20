@@ -5,6 +5,7 @@ import Establecimiento.Establecimiento.dto.EstablecimientoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,11 +17,13 @@ public class EstablecimientoController {
     @Autowired
     private EstablecimientoService establecimientoService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'CLIENTE')")
     @GetMapping
     public ResponseEntity<List<EstablecimientoResponseDTO>> obtenerTodos() {
         return ResponseEntity.ok(establecimientoService.obtenerTodos());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'CLIENTE')")
     @GetMapping("/{id}")
     public ResponseEntity<EstablecimientoResponseDTO> obtenerPorId(@PathVariable Long id) {
         return establecimientoService.obtenerPorId(id)
@@ -28,26 +31,28 @@ public class EstablecimientoController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR')")
     @GetMapping("/{id}/entrenadores")
     public ResponseEntity<List<Object>> obtenerEntrenadores(@PathVariable Long id) {
         return ResponseEntity.ok(establecimientoService.obtenerEntrenadores(id));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR')")
     @GetMapping("/{id}/clientes")
     public ResponseEntity<List<Object>> obtenerClientes(@PathVariable Long id) {
         return ResponseEntity.ok(establecimientoService.obtenerClientes(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<EstablecimientoResponseDTO> crearEstablecimiento(@RequestBody EstablecimientoRequestDTO dto) {
         return ResponseEntity.status(201).body(establecimientoService.guardar(dto));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        if (establecimientoService.obtenerPorId(id).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+        if (establecimientoService.obtenerPorId(id).isEmpty()) return ResponseEntity.notFound().build();
         establecimientoService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
     }
