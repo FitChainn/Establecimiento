@@ -2,16 +2,20 @@ package Establecimiento.Establecimiento.Service;
 
 import Establecimiento.Establecimiento.Model.Establecimiento;
 import Establecimiento.Establecimiento.Repository.EstablecimientoRepository;
+import Establecimiento.Establecimiento.WebClient.ClienteClient;
+import Establecimiento.Establecimiento.WebClient.EntrenadorClient;
+import Establecimiento.Establecimiento.WebClient.EquipoClient;
+import Establecimiento.Establecimiento.dto.EquipoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoResponseDTO;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -22,9 +26,12 @@ public class EstablecimientoService {
 
     @Autowired
     private EstablecimientoRepository establecimientoRepository;
-
     @Autowired
-    private WebClient.Builder webClientBuilder;
+    private EntrenadorClient entrenadorClient;
+    @Autowired
+    private ClienteClient clienteClient;
+    @Autowired
+    private EquipoClient equipoClient;
 
     private EstablecimientoResponseDTO mapToDTO(Establecimiento e) {
         return new EstablecimientoResponseDTO(
@@ -36,13 +43,21 @@ public class EstablecimientoService {
                 null
         );
     }
+
     private EstablecimientoResponseDTO mapToDTOCompleto(Establecimiento e) {
         EstablecimientoResponseDTO dto = mapToDTO(e);
-        dto.setEntrenadores(obtenerEntrenadores(e.getId()));
-        dto.setClientes(obtenerClientes(e.getId()));
-        dto.setResumenEquipos(obtenerResumenEquipos(e.getId()));
+        dto.setEntrenadores(entrenadorClient.obtenerEntrenadeoresPorEstablecimiento(e.getId()));
+        dto.setClientes(clienteClient.obtenerClientesPorEstablecimiento(e.getId()));
+        // Si no hay equipos, devuelve Map vacío en vez de romper
+        try {
+            dto.setResumenEquipos(equipoClient.obtenerResumenEquipos(e.getId()));
+        } catch (NoSuchElementException ex) {
+            log.warn("Sin equipos para establecimiento {}", e.getId());
+            dto.setResumenEquipos(Map.of());
+        }
         return dto;
     }
+
     public List<EstablecimientoResponseDTO> obtenerTodos() {
         return establecimientoRepository.findAll()
                 .stream()
@@ -54,14 +69,14 @@ public class EstablecimientoService {
         return establecimientoRepository.findById(id).map(this::mapToDTOCompleto);
     }
 
-
     public EstablecimientoResponseDTO guardar(EstablecimientoRequestDTO dto) {
         log.info("Guardando establecimiento: {}", dto.getNombre());
         Establecimiento e = new Establecimiento();
         e.setNombre(dto.getNombre());
         e.setDireccion(dto.getDireccion());
-        log.info("Establecimiento guardado con ID: {}", e.getId());
-        return mapToDTO(establecimientoRepository.save(e));
+        Establecimiento guardado = establecimientoRepository.save(e);
+        log.info("Establecimiento guardado con ID: {}", guardado.getId());
+        return mapToDTO(guardado);
     }
 
     public void eliminarPorId(Long id) {
@@ -70,43 +85,27 @@ public class EstablecimientoService {
     }
 
     public List<Object> obtenerEntrenadores(Long establecimientoId) {
-        try {
-            return webClientBuilder.build()
-                    .get()
-                    .uri("http://localhost:8082/api/entrenadores/establecimiento/{id}", establecimientoId)
-                    .retrieve()
-                    .bodyToFlux(Object.class)
-                    .collectList()
-                    .block();
-        } catch (Exception e) {
-            return List.of();
-        }
+        return entrenadorClient.obtenerEntrenadeoresPorEstablecimiento(establecimientoId);
     }
 
     public List<Object> obtenerClientes(Long establecimientoId) {
-        try {
-            return webClientBuilder.build()
-                    .get()
-                    .uri("http://localhost:8081/v1/clientes/establecimiento/{id}", establecimientoId)
-                    .retrieve()
-                    .bodyToFlux(Object.class)
-                    .collectList()
-                    .block();
-        } catch (Exception e) {
-            return List.of();
-        }
+        return clienteClient.obtenerClientesPorEstablecimiento(establecimientoId);
     }
-    public Map<String, Object> obtenerResumenEquipos(Long establecimientoId) {
-        try {
-            return webClientBuilder.build()
-                    .get()
-                    .uri("http://localhost:8083/v1/equipos/establecimiento/{id}/resumen", establecimientoId)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
-        } catch (Exception e) {
-            log.warn("No se pudo obtener equipos del establecimiento ID: {}", establecimientoId);
-            return Map.of();
-        }
+
+    public void asignarEntrenador(Long establecimientoId, Long entrenadorId) {
+        log.info("Asignando entrenador {} al establecimiento {}", entrenadorId, establecimientoId);
+        establecimientoRepository.findById(establecimientoId)
+                .orElseThrow(() -> new NoSuchElementException("Establecimiento no encontrado con ID: " + establecimientoId));
+        entrenadorClient.verificarEntrenadorExiste(entrenadorId);
+        entrenadorClient.asignarEstablecimientoAEntrenador(entrenadorId, establecimientoId);
+        log.info("Entrenador {} asignado al establecimiento {} correctamente", entrenadorId, establecimientoId);
+    }
+
+    public void crearEquipo(Long establecimientoId, EquipoRequestDTO dto) {
+        log.info("Creando equipo en establecimiento ID: {}", establecimientoId);
+        establecimientoRepository.findById(establecimientoId)
+                .orElseThrow(() -> new NoSuchElementException("Establecimiento no encontrado con ID: " + establecimientoId));
+        equipoClient.crearEquipo(establecimientoId, dto);
+        log.info("Equipo creado correctamente en establecimiento {}", establecimientoId);
     }
 }

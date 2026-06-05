@@ -1,8 +1,10 @@
 package Establecimiento.Establecimiento.Controller;
 
 import Establecimiento.Establecimiento.Service.EstablecimientoService;
+import Establecimiento.Establecimiento.dto.EquipoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoResponseDTO;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,7 +47,8 @@ public class EstablecimientoController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<EstablecimientoResponseDTO> crearEstablecimiento(@RequestBody EstablecimientoRequestDTO dto) {
+    public ResponseEntity<EstablecimientoResponseDTO> crearEstablecimiento(
+            @Valid @RequestBody EstablecimientoRequestDTO dto) {
         return ResponseEntity.status(201).body(establecimientoService.guardar(dto));
     }
 
@@ -55,5 +58,23 @@ public class EstablecimientoController {
         if (establecimientoService.obtenerPorId(id).isEmpty()) return ResponseEntity.notFound().build();
         establecimientoService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{establecimientoId}/entrenador/{entrenadorId}")
+    public ResponseEntity<?> asignarEntrenador(
+            @PathVariable Long establecimientoId,
+            @PathVariable Long entrenadorId) {
+        establecimientoService.asignarEntrenador(establecimientoId, entrenadorId);
+        return ResponseEntity.ok("Entrenador " + entrenadorId + " asignado al establecimiento " + establecimientoId);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/{establecimientoId}/equipo")
+    public ResponseEntity<?> crearEquipo(
+            @PathVariable Long establecimientoId,
+            @Valid @RequestBody EquipoRequestDTO dto) {
+        establecimientoService.crearEquipo(establecimientoId, dto);
+        return ResponseEntity.status(201).body("Equipo creado correctamente en el establecimiento " + establecimientoId);
     }
 }
