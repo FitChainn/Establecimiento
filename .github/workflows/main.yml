@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 name: proyecto_fitchain_establecimiento
-=======
-name: proyecto_fitchain
->>>>>>> pÂc
 on:
   push:
     branches:
@@ -22,7 +18,6 @@ jobs:
           key: ${{secrets.KEY}}
           port: ${{secrets.PORT}}
           script: |
-<<<<<<< HEAD
             mkdir -p /home/ubuntu/java/Establecimiento
 
       - name: Sincronizar proyecto en el servidor
@@ -30,25 +25,12 @@ jobs:
         with:
           switches: "-avz --delete"
           path: "./"
-=======
-                  mkdir -p /home/ubuntu/java/Establecimiento
-
-      - name : Sincronizar proyecto en el servidor
-        uses: burnett01/rsync-deployments@v8
-        with:
-          switches: "-avz --delete"
-          path: './'
->>>>>>> pÂc
           remote_host: ${{secrets.IP_SERVER}}
           remote_user: ${{secrets.USERNAME}}
           remote_path: "/home/ubuntu/java/Establecimiento"
           remote_key: ${{secrets.KEY}}
           remote_port: ${{secrets.PORT}}
 
-<<<<<<< HEAD
-=======
-
->>>>>>> pÂc
       - name: Levantar docker con docker compose
         uses: appleboy/ssh-action@v1
         with:
@@ -57,11 +39,5 @@ jobs:
           key: ${{secrets.KEY}}
           port: ${{secrets.PORT}}
           script: |
-<<<<<<< HEAD
             cd /home/ubuntu/java/
             docker compose up -d --build establecimiento
-=======
-                  cd /home/ubuntu/java/
-                  docker compose down
-                  docker compose up -d --build
->>>>>>> pÂc
