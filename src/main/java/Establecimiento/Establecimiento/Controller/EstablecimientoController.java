@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @Tag(name = "ESTABLECIMIENTOS", description = "GESTION DE LOS ESTABLECIMIENTOS")
 @RestController
 @RequestMapping("/v1/establecimientos")
@@ -31,6 +33,7 @@ public class EstablecimientoController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'CLIENTE')")
     @GetMapping
     public ResponseEntity<List<EstablecimientoResponseDTO>> obtenerTodos() {
+        log.info("GET /v1/establecimientos - LISTAR TODOS");
         return ResponseEntity.ok(establecimientoService.obtenerTodos());
     }
 
@@ -42,6 +45,7 @@ public class EstablecimientoController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'CLIENTE')")
     @GetMapping("/{id}")
     public ResponseEntity<EstablecimientoResponseDTO> obtenerPorId(@PathVariable Long id) {
+        log.info("GET /v1/establecimientos/{} - BUSCAR POR ID", id);
         return establecimientoService.obtenerPorId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -56,6 +60,7 @@ public class EstablecimientoController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR')")
     @GetMapping("/{id}/entrenadores")
     public ResponseEntity<List<Object>> obtenerEntrenadores(@PathVariable Long id) {
+        log.info("GET /v1/establecimientos/{}/entrenadores - LISTAR ENTRENADORES", id);
         return ResponseEntity.ok(establecimientoService.obtenerEntrenadores(id));
     }
 
@@ -68,6 +73,7 @@ public class EstablecimientoController {
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR')")
     @GetMapping("/{id}/clientes")
     public ResponseEntity<List<Object>> obtenerClientes(@PathVariable Long id) {
+        log.info("GET /v1/establecimientos/{}/clientes - LISTAR CLIENTES", id);
         return ResponseEntity.ok(establecimientoService.obtenerClientes(id));
     }
 
@@ -80,6 +86,7 @@ public class EstablecimientoController {
     @PostMapping
     public ResponseEntity<EstablecimientoResponseDTO> crearEstablecimiento(
             @Valid @RequestBody EstablecimientoRequestDTO dto) {
+        log.info("POST /v1/establecimientos - CREAR ESTABLECIMIENTO nombre={}", dto.getNombre());
         return ResponseEntity.status(201).body(establecimientoService.guardar(dto));
     }
 
@@ -91,6 +98,7 @@ public class EstablecimientoController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminar(@PathVariable Long id) {
+        log.info("DELETE /v1/establecimientos/{} - ELIMINAR ESTABLECIMIENTO", id);
         if (establecimientoService.obtenerPorId(id).isEmpty()) return ResponseEntity.notFound().build();
         establecimientoService.eliminarPorId(id);
         return ResponseEntity.noContent().build();
@@ -106,6 +114,7 @@ public class EstablecimientoController {
     public ResponseEntity<?> asignarEntrenador(
             @PathVariable Long establecimientoId,
             @PathVariable Long entrenadorId) {
+        log.info("PUT /v1/establecimientos/{}/entrenador/{} - ASIGNAR ENTRENADOR", establecimientoId, entrenadorId);
         establecimientoService.asignarEntrenador(establecimientoId, entrenadorId);
         return ResponseEntity.ok("Entrenador " + entrenadorId + " asignado al establecimiento " + establecimientoId);
     }
@@ -121,6 +130,7 @@ public class EstablecimientoController {
     public ResponseEntity<?> crearEquipo(
             @PathVariable Long establecimientoId,
             @Valid @RequestBody EquipoRequestDTO dto) {
+        log.info("POST /v1/establecimientos/{}/equipo - CREAR EQUIPO", establecimientoId);
         establecimientoService.crearEquipo(establecimientoId, dto);
         return ResponseEntity.status(201).body("Equipo creado correctamente en el establecimiento " + establecimientoId);
     }

@@ -59,6 +59,7 @@ public class EstablecimientoService {
     }
 
     public List<EstablecimientoResponseDTO> obtenerTodos() {
+        log.info("OBTENIENDO TODOS LOS ESTABLECIMIENTOS");
         return establecimientoRepository.findAll()
                 .stream()
                 .map(this::mapToDTOCompleto)
@@ -66,46 +67,49 @@ public class EstablecimientoService {
     }
 
     public Optional<EstablecimientoResponseDTO> obtenerPorId(Long id) {
+        log.info("BUSCANDO ESTABLECIMIENTO CON ID: {}", id);
         return establecimientoRepository.findById(id).map(this::mapToDTOCompleto);
     }
 
     public EstablecimientoResponseDTO guardar(EstablecimientoRequestDTO dto) {
-        log.info("Guardando establecimiento: {}", dto.getNombre());
+        log.info("GUARDANDO ESTABLECIMIENTO: {}", dto.getNombre());
         Establecimiento e = new Establecimiento();
         e.setNombre(dto.getNombre());
         e.setDireccion(dto.getDireccion());
         Establecimiento guardado = establecimientoRepository.save(e);
-        log.info("Establecimiento guardado con ID: {}", guardado.getId());
+        log.info("ESTABLECIMIENTO GUARDADO CON ID: {}", guardado.getId());
         return mapToDTO(guardado);
     }
 
     public void eliminarPorId(Long id) {
-        log.info("Eliminando establecimiento con ID: {}", id);
+        log.info("ELIMINANDO ESTABLECIMIENTO CON ID: {}", id);
         establecimientoRepository.deleteById(id);
     }
 
     public List<Object> obtenerEntrenadores(Long establecimientoId) {
+        log.info("OBTENIENDO ENTRENADORES DEL ESTABLECIMIENTO ID: {}", establecimientoId);
         return entrenadorClient.obtenerEntrenadeoresPorEstablecimiento(establecimientoId);
     }
 
     public List<Object> obtenerClientes(Long establecimientoId) {
+        log.info("OBTENIENDO CLIENTES DEL ESTABLECIMIENTO ID: {}", establecimientoId);
         return clienteClient.obtenerClientesPorEstablecimiento(establecimientoId);
     }
 
     public void asignarEntrenador(Long establecimientoId, Long entrenadorId) {
-        log.info("Asignando entrenador {} al establecimiento {}", entrenadorId, establecimientoId);
+        log.info("ASIGNANDO ENTRENADOR {} AL ESTABLECIMIENTO {}", entrenadorId, establecimientoId);
         establecimientoRepository.findById(establecimientoId)
                 .orElseThrow(() -> new NoSuchElementException("Establecimiento no encontrado con ID: " + establecimientoId));
         entrenadorClient.verificarEntrenadorExiste(entrenadorId);
         entrenadorClient.asignarEstablecimientoAEntrenador(entrenadorId, establecimientoId);
-        log.info("Entrenador {} asignado al establecimiento {} correctamente", entrenadorId, establecimientoId);
+        log.info("ENTRENADOR {} ASIGNADO AL ESTABLECIMIENTO {} CORRECTAMENTE", entrenadorId, establecimientoId);
     }
 
     public void crearEquipo(Long establecimientoId, EquipoRequestDTO dto) {
-        log.info("Creando equipo en establecimiento ID: {}", establecimientoId);
+        log.info("CREANDO EQUIPO EN ESTABLECIMIENTO ID: {}", establecimientoId);
         establecimientoRepository.findById(establecimientoId)
                 .orElseThrow(() -> new NoSuchElementException("Establecimiento no encontrado con ID: " + establecimientoId));
         equipoClient.crearEquipo(establecimientoId, dto);
-        log.info("Equipo creado correctamente en establecimiento {}", establecimientoId);
+        log.info("EQUIPO CREADO CORRECTAMENTE EN ESTABLECIMIENTO {}", establecimientoId);
     }
 }
