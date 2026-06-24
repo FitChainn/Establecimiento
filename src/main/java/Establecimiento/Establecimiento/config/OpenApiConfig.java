@@ -1,7 +1,10 @@
 package Establecimiento.Establecimiento.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,8 +20,16 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Establecimiento API - FitChain")
                         .description("API GESTIÓN DEL ESTABLECIMIENTO")
-                        .version("1.0.0")).servers(List.of(new Server().url("http://44.197.145.9:8084").description("AWS"),
+                        .version("1.0.0"))
+                .servers(List.of(
+                        new Server().url("http://44.197.145.9:8091").description("Gateway AWS"),
                         new Server().url("http://localhost:8084").description("Local")
-                ));
+                ))
+                .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
+                .components(new Components()
+                        .addSecuritySchemes("Bearer Authentication", new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")));
     }
 }

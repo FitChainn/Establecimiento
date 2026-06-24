@@ -1,6 +1,7 @@
 package Establecimiento.Establecimiento.Controller;
 
 import Establecimiento.Establecimiento.Service.EstablecimientoService;
+import Establecimiento.Establecimiento.assembler.EstablecimientoModelAssembler;
 import Establecimiento.Establecimiento.dto.EquipoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoRequestDTO;
 import Establecimiento.Establecimiento.dto.EstablecimientoResponseDTO;
@@ -11,11 +12,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @Slf4j
 @Tag(name = "ESTABLECIMIENTOS", description = "GESTION DE LOS ESTABLECIMIENTOS")
@@ -26,15 +33,21 @@ public class EstablecimientoController {
     @Autowired
     private EstablecimientoService establecimientoService;
 
+    @Autowired
+    private EstablecimientoModelAssembler assembler;
+
     @Operation(summary = "OBTENER TODOS LOS ESTABLECIMIENTOS", description = "Retorna la lista de todos los establecimientos. Acceso: ADMIN, ENTRENADOR, CLIENTE")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente")
     })
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'CLIENTE')")
     @GetMapping
-    public ResponseEntity<List<EstablecimientoResponseDTO>> obtenerTodos() {
+    public ResponseEntity<CollectionModel<EntityModel<EstablecimientoResponseDTO>>> obtenerTodos() {
         log.info("GET /v1/establecimientos - LISTAR TODOS");
-        return ResponseEntity.ok(establecimientoService.obtenerTodos());
+        List<EntityModel<EstablecimientoResponseDTO>> establecimientos = establecimientoService.obtenerTodos()
+                .stream().map(assembler::toModel).toList();
+        return ResponseEntity.ok(CollectionModel.of(establecimientos,
+                linkTo(methodOn(EstablecimientoController.class).obtenerTodos()).withSelfRel()));
     }
 
     @Operation(summary = "OBTENER ESTABLECIMIENTO POR ID", description = "Retorna un establecimiento específico por su ID. Acceso: ADMIN, ENTRENADOR, CLIENTE")
@@ -44,11 +57,11 @@ public class EstablecimientoController {
     })
     @PreAuthorize("hasAnyRole('ADMIN', 'ENTRENADOR', 'CLIENTE')")
     @GetMapping("/{id}")
-    public ResponseEntity<EstablecimientoResponseDTO> obtenerPorId(@PathVariable Long id) {
+    public ResponseEntity<EntityModel<EstablecimientoResponseDTO>> obtenerPorId(@PathVariable Long id) {
         log.info("GET /v1/establecimientos/{} - BUSCAR POR ID", id);
-        return establecimientoService.obtenerPorId(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        EstablecimientoResponseDTO est = establecimientoService.obtenerPorId(id)
+                .orElseThrow(() -> new NoSuchElementException("ESTABLECIMIENTO CON ID " + id + " NO ENCONTRADO"));
+        return ResponseEntity.ok(assembler.toModel(est));
     }
 
     @Operation(summary = "OBTENER ENTRENADORES DEL ESTABLECIMIENTO", description = "Retorna la lista de entrenadores asociados a un establecimiento. Acceso: ADMIN, ENTRENADOR")
@@ -84,10 +97,10 @@ public class EstablecimientoController {
     })
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<EstablecimientoResponseDTO> crearEstablecimiento(
+    public ResponseEntity<EntityModel<EstablecimientoResponseDTO>> crearEstablecimiento(
             @Valid @RequestBody EstablecimientoRequestDTO dto) {
         log.info("POST /v1/establecimientos - CREAR ESTABLECIMIENTO nombre={}", dto.getNombre());
-        return ResponseEntity.status(201).body(establecimientoService.guardar(dto));
+        return ResponseEntity.status(201).body(assembler.toModel(establecimientoService.guardar(dto)));
     }
 
     @Operation(summary = "ELIMINAR ESTABLECIMIENTO", description = "Elimina un establecimiento por su ID. Acceso: ADMIN")
@@ -97,11 +110,12 @@ public class EstablecimientoController {
     })
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
+    public ResponseEntity<EntityModel<EstablecimientoResponseDTO>> eliminar(@PathVariable Long id) {
         log.info("DELETE /v1/establecimientos/{} - ELIMINAR ESTABLECIMIENTO", id);
-        if (establecimientoService.obtenerPorId(id).isEmpty()) return ResponseEntity.notFound().build();
+        EstablecimientoResponseDTO establecimiento = establecimientoService.obtenerPorId(id)
+                .orElseThrow(() -> new NoSuchElementException("ESTABLECIMIENTO CON ID " + id + " NO ENCONTRADO"));
         establecimientoService.eliminarPorId(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(assembler.toModel(establecimiento));
     }
 
     @Operation(summary = "ASIGNAR ENTRENADOR A ESTABLECIMIENTO", description = "Asigna un entrenador existente a un establecimiento. Acceso: ADMIN")
